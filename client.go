@@ -95,10 +95,11 @@ func (s *S3) Put(contentType, key string, body io.ReadSeeker) error {
 }
 
 // List will list the contents of a bucket
-func (s *S3) List() ([]string, error) {
+func (s *S3) List(prefix string) ([]string, error) {
 
 	params := &s3.ListObjectsInput{
 		Bucket: &s.Bucket,
+		Prefix: &prefix,
 	}
 	obj, err := s.Client.ListObjects(context.Background(), params)
 	if err != nil {
