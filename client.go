@@ -17,19 +17,33 @@ limitations under the License.
 package simple_s3
 
 import (
+	"bytes"
 	"context"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/feature/s3/manager"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"io"
+	"log"
+	"net/http"
+	"os"
 )
 
+// S3 contains an S3 Client and a Bucket.
 type S3 struct {
 	Bucket string
 	Client *s3.Client
 }
 
+// fileInfo contains information on a file being uploaded to S3.
+type fileInfo struct {
+	buffer      []byte
+	size        int64
+	contentType string
+}
+
+// New generates a new Endpoint With Resolver Options and returns an S3 containing the Bucket and S3Client.
 func New(endpoint, accessKey, secretKey, bucket, region string) (*S3, error) {
 	const defaultRegion = "us-east-1"
 	r := defaultRegion
@@ -77,24 +91,66 @@ func (s *S3) Fetch(fileName string) ([]byte, error) {
 	return io.ReadAll(obj.Body)
 }
 
-// Put Pushes a file to an S3 bucket.
-func (s *S3) Put(contentType, key string, body io.ReadSeeker) error {
-	params := &s3.PutObjectInput{
-		Bucket:      &s.Bucket,
-		Key:         &key,
-		ContentType: &contentType,
-		Body:        body,
-	}
+// Put Pushes a file to an S3 bucket. If the object is greater than 100MB it will be split into a multipart upload.
+func (s *S3) Put(key string, body *os.File) error {
+	ctx := context.Background()
 
-	_, err := s.Client.PutObject(context.Background(), params)
+	fi, err := readFile(body)
 	if err != nil {
 		return err
+	}
+
+	params := &s3.PutObjectInput{
+		Bucket:      aws.String(s.Bucket),
+		Key:         aws.String(key),
+		ContentType: aws.String(fi.contentType),
+		Body:        bytes.NewReader(fi.buffer),
+	}
+
+	var partMiBs int64 = 100
+	maxPartSize := partMiBs * 1024 * 1024
+	// If the file is greater than 100MB then we'll do a multipart upload
+	if fi.size > maxPartSize {
+		uploader := manager.NewUploader(s.Client, func(u *manager.Uploader) {
+			u.PartSize = maxPartSize
+		})
+
+		_, err = uploader.Upload(ctx, params)
+		if err != nil {
+			log.Printf("Couldn't upload large object to %v:%v. Here's why: %v\n",
+				s.Bucket, key, err)
+		}
+	} else {
+		_, err = s.Client.PutObject(context.Background(), params)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
 }
 
-// List will list the contents of a bucket
+// readFile Reads the file into a buffer and returns the buffer along with the file content type.
+func readFile(body *os.File) (*fileInfo, error) {
+	info, _ := body.Stat()
+	size := info.Size()
+	buffer := make([]byte, size)
+	fileType := http.DetectContentType(buffer)
+	_, err := body.Read(buffer)
+	if err != nil {
+		return nil, err
+	}
+
+	fi := &fileInfo{
+		buffer:      buffer,
+		contentType: fileType,
+		size:        size,
+	}
+
+	return fi, nil
+}
+
+// List will list the contents of a bucket.
 func (s *S3) List(prefix string) ([]string, error) {
 
 	params := &s3.ListObjectsInput{
