@@ -7,6 +7,7 @@
 ### Changed/Added
 
 * Module updates
+* removing deprecated code
 
 ## [ 2024/02/14 - v0.1.0 ]
 
