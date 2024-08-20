@@ -19,15 +19,22 @@ package simple_s3
 import (
 	"bytes"
 	"context"
+	"errors"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/feature/s3/manager"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	smithyendpoints "github.com/aws/smithy-go/endpoints"
 	"io"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
+)
+
+var (
+	ep string
 )
 
 // S3 contains an S3 Client and a Bucket.
@@ -43,28 +50,37 @@ type fileInfo struct {
 	contentType string
 }
 
-// New generates a new Endpoint With Resolver Options and returns an S3 containing the Bucket and S3Client.
+type staticResolver struct{}
+
+func (*staticResolver) ResolveEndpoint(ctx context.Context, params s3.EndpointParameters) (
+	smithyendpoints.Endpoint, error,
+) {
+	// This value will be used as-is when making the request.
+	u, err := url.Parse(ep)
+	if err != nil {
+		return smithyendpoints.Endpoint{}, err
+	}
+	return smithyendpoints.Endpoint{
+		URI: *u,
+	}, nil
+}
+
+// New generates a new EndpointWithResolverOptions and returns an S3 containing the Bucket and S3Client.
 func New(endpoint, accessKey, secretKey, bucket, region string) (*S3, error) {
 	const defaultRegion = "us-east-1"
 	r := defaultRegion
 	if region != "" {
 		r = region
 	}
-
-	resolver := aws.EndpointResolverWithOptionsFunc(func(service, region string, options ...any) (aws.Endpoint, error) {
-		return aws.Endpoint{
-			PartitionID:       "aws",
-			URL:               endpoint,
-			SigningRegion:     r,
-			HostnameImmutable: true,
-		}, nil
-	})
+	ep = endpoint
+	if ep == "" {
+		return nil, errors.New("an endpoint must be supplied")
+	}
 
 	ctx := context.Background()
 
 	cfg, err := config.LoadDefaultConfig(ctx,
 		config.WithRegion(r),
-		config.WithEndpointResolverWithOptions(resolver),
 		config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(accessKey, secretKey, "")),
 	)
 	if err != nil {
@@ -72,7 +88,9 @@ func New(endpoint, accessKey, secretKey, bucket, region string) (*S3, error) {
 	}
 	return &S3{
 		Bucket: bucket,
-		Client: s3.NewFromConfig(cfg),
+		Client: s3.NewFromConfig(cfg, func(o *s3.Options) {
+			o.EndpointResolverV2 = &staticResolver{}
+		}),
 	}, nil
 }
 
