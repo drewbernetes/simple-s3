@@ -1,6 +1,10 @@
 # Changelog
 
-##
+## [ 2024/08/21 - v0.1.2 ]
+
+### Changed/Added
+
+* Updated golang pipeline version
 
 ## [ 2024/08/20 - v0.1.1 ]
 
