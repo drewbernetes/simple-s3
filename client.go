@@ -19,22 +19,17 @@ package simple_s3
 import (
 	"bytes"
 	"context"
-	"errors"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/feature/s3/manager"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
-	smithyendpoints "github.com/aws/smithy-go/endpoints"
+	transport "github.com/aws/smithy-go/endpoints"
 	"io"
 	"log"
 	"net/http"
 	"net/url"
 	"os"
-)
-
-var (
-	ep string
 )
 
 // S3 contains an S3 Client and a Bucket.
@@ -50,19 +45,14 @@ type fileInfo struct {
 	contentType string
 }
 
-type staticResolver struct{}
+type staticResolver struct {
+	URL *url.URL
+}
 
-func (*staticResolver) ResolveEndpoint(ctx context.Context, params s3.EndpointParameters) (
-	smithyendpoints.Endpoint, error,
-) {
-	// This value will be used as-is when making the request.
-	u, err := url.Parse(ep)
-	if err != nil {
-		return smithyendpoints.Endpoint{}, err
-	}
-	return smithyendpoints.Endpoint{
-		URI: *u,
-	}, nil
+func (r *staticResolver) ResolveEndpoint(_ context.Context, params s3.EndpointParameters) (transport.Endpoint, error) {
+	u := *r.URL
+	u.Path += "/" + *params.Bucket
+	return transport.Endpoint{URI: u}, nil
 }
 
 // New generates a new EndpointWithResolverOptions and returns an S3 containing the Bucket and S3Client.
@@ -72,9 +62,9 @@ func New(endpoint, accessKey, secretKey, bucket, region string) (*S3, error) {
 	if region != "" {
 		r = region
 	}
-	ep = endpoint
-	if ep == "" {
-		return nil, errors.New("an endpoint must be supplied")
+	ep, err := url.Parse(endpoint)
+	if err != nil {
+		return nil, err
 	}
 
 	ctx := context.Background()
@@ -89,7 +79,7 @@ func New(endpoint, accessKey, secretKey, bucket, region string) (*S3, error) {
 	return &S3{
 		Bucket: bucket,
 		Client: s3.NewFromConfig(cfg, func(o *s3.Options) {
-			o.EndpointResolverV2 = &staticResolver{}
+			o.EndpointResolverV2 = &staticResolver{URL: ep}
 		}),
 	}, nil
 }
