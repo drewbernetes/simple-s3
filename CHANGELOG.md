@@ -1,5 +1,11 @@
 # Changelog
 
+## [ 2024/08/21 - v0.1.3 ]
+
+### Fixed
+
+* EndpointResolverV2 implementation
+
 ## [ 2024/08/21 - v0.1.2 ]
 
 ### Changed/Added
