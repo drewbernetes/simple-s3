@@ -1,5 +1,18 @@
 # Changelog
 
+## [ 2024/10/21 - v0.1.5 ]
+
+### Fixed
+
+* Module updates
+* Go version bump
+
+## [ 2024/09/04 - v0.1.4 ]
+
+### Fixed
+
+* Module updates
+
 ## [ 2024/08/21 - v0.1.3 ]
 
 ### Fixed
