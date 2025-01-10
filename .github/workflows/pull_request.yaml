@@ -3,16 +3,21 @@ name: Validate on Pull Request
 on:
   pull_request:
     types: [ opened, reopened, synchronize ]
-
+    paths:
+      - pkg
+      - go.mod
+      - go.sum
+      - client.go
+      - client_test.go
 jobs:
   lint:
     name: Lint files
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: '1.23.2'
+          go-version: 1.23.4
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v3
         with:
@@ -21,11 +26,11 @@ jobs:
           args: --timeout=30m
   test:
     name: Run tests
-    runs-on: 'ubuntu-22.04'
+    runs-on: ubuntu-latest
     needs: lint
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: '1.23.2'
+          go-version: 1.23.4
       - run: go test -v -cover ./...

@@ -59,7 +59,7 @@ func (r *staticResolver) ResolveEndpoint(_ context.Context, params s3.EndpointPa
 func New(endpoint, accessKey, secretKey, bucket, region string) (*S3, error) {
 	const defaultRegion = "us-east-1"
 	r := defaultRegion
-	if region != "" {
+	if region != defaultRegion && region != "" {
 		r = region
 	}
 	ep, err := url.Parse(endpoint)
