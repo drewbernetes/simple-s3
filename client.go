@@ -95,7 +95,7 @@ func (s *S3) CreateBucket() error {
 
 // DeleteBucket removes all objects from a bucket and then deletes the bucket itself
 func (s *S3) DeleteBucket() error {
-	// List all objects in bucket
+	// List all objects in the bucket
 	objects, err := s.List("")
 	if err != nil {
 		return err
@@ -150,7 +150,7 @@ func (s *S3) Put(key string, body *os.File) error {
 
 	var partMiBs int64 = 100
 	maxPartSize := partMiBs * 1024 * 1024
-	// If the file is greater than 100MB then we'll do a multipart upload
+	// If the file is greater than 100MB, then we'll do a multipart upload
 	if fi.size > maxPartSize {
 		uploader := manager.NewUploader(s.Client, func(u *manager.Uploader) {
 			u.PartSize = maxPartSize
