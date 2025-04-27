@@ -84,6 +84,39 @@ func New(endpoint, accessKey, secretKey, bucket, region string) (*S3, error) {
 	}, nil
 }
 
+// CreateBucket uses the client to create an S3 Bucket
+func (s *S3) CreateBucket() error {
+	ctx := context.Background()
+	_, err := s.Client.CreateBucket(ctx, &s3.CreateBucketInput{
+		Bucket: aws.String(s.Bucket),
+	})
+	return err
+}
+
+// DeleteBucket removes all objects from a bucket and then deletes the bucket itself
+func (s *S3) DeleteBucket() error {
+	// List all objects in bucket
+	objects, err := s.List("")
+	if err != nil {
+		return err
+	}
+
+	// Delete all objects
+	for _, key := range objects {
+		if err := s.Delete(key); err != nil {
+			return err
+		}
+	}
+
+	// Delete the bucket
+	input := &s3.DeleteBucketInput{
+		Bucket: aws.String(s.Bucket),
+	}
+
+	_, err = s.Client.DeleteBucket(context.Background(), input)
+	return err
+}
+
 // Fetch Downloads a file from an S3 bucket and returns its contents as a byte array.
 func (s *S3) Fetch(fileName string) ([]byte, error) {
 	params := &s3.GetObjectInput{
@@ -176,4 +209,15 @@ func (s *S3) List(prefix string) ([]string, error) {
 	}
 
 	return contents, nil
+}
+
+// Delete removes a single object from an S3 bucket
+func (s *S3) Delete(key string) error {
+	input := &s3.DeleteObjectInput{
+		Bucket: aws.String(s.Bucket),
+		Key:    aws.String(key),
+	}
+
+	_, err := s.Client.DeleteObject(context.Background(), input)
+	return err
 }
