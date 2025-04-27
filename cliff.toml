@@ -1,12 +1,11 @@
 # git-cliff ~ configuration file
 # https://git-cliff.org/docs/configuration
 [repo]
-url = "nscaledev"
-repo = "argocd-apps"
+url = "drewbernetes"
+repo = "simple-s3"
 # Set the GITHUB_TOKEN env var with your PAT in to have this work. Fopr ease, set it in your ~/.bashrc, ~/.zshrc etc
 
 [bump]
-bump_type = "patch"
 features_always_bump_minor = true
 breaking_always_bump_major = true
 initial_tag = "0.1.0"
@@ -28,22 +27,29 @@ body = """
 {%- endmacro -%}
 
 {% if version -%}
-    ## [{{ version | trim_start_matches(pat="v") }}] - {{ timestamp | date(format="%Y-%m-%d") }}
-{% else -%}
+    ## [{{ version | trim_start_matches(pat="v") }}] - {{ timestamp | date(format="%Y-%m-%d") -}}
+{% else %}
     ## [Unreleased]
-{% endif -%}
+{% endif %}
 
 {% for group, commits in commits | group_by(attribute="group") %}
+    {%- set_global non_automated_commits = [] -%}
+    {%- for commit in commits -%}
+        {%- if commit.message != "Automated changelog update" -%}
+            {%- set_global non_automated_commits = non_automated_commits | concat(with=commit) -%}
+        {%- endif -%}
+    {%- endfor -%}
+
     ### {{ group | upper_first }}
-    {%- for commit in commits %}
+    {%- for commit in non_automated_commits %}
         - {{ commit.message | split(pat="\n") | first | upper_first | trim }}\
             {% if commit.remote.username %} by @{{ commit.remote.username }}{%- endif -%}
             {% if commit.remote.pr_number %} in \
             [#{{ commit.remote.pr_number }}]({{ self::remote_url() }}/pull/{{ commit.remote.pr_number }}) \
             {%- endif -%}
-    {% endfor %}
-{% endfor %}
+    {%- endfor %}
 
+{% endfor -%}
 {%- if github.contributors | filter(attribute="is_first_time", value=true) | length != 0 %}
   ## New Contributors
 {%- endif -%}
@@ -84,21 +90,22 @@ filter_unconventional = false
 # regex for preprocessing the commit messages
 commit_preprocessors = [
     # remove issue numbers from commits
-    { pattern = '\((\w+\s)?#([0-9]+)\)', replace = "" },
+    { pattern = '^\[?[A-Za-z]+-\d+\]?(?: ?- ?|: )?\s*| \((\w+\s)?#(\d+)\)', replace = "" },
 ]
 # regex for parsing and grouping commits
 commit_parsers = [
-    { message = "^[a|A]dd", group = "Added" },
-    { message = "^[s|S]upport", group = "Added" },
-    { message = "^[r|R]emove", group = "Removed" },
-    { message = "^.*: add", group = "Added" },
-    { message = "^.*: support", group = "Added" },
-    { message = "^.*: remove", group = "Removed" },
-    { message = "^.*: delete", group = "Removed" },
-    { message = "^test", group = "Fixed" },
-    { message = "^fix", group = "Fixed" },
-    { message = "^.*: fix", group = "Fixed" },
-    { message = "^.*", group = "Changed" },
+    { message = "^[a|A]dd", group = ":rocket: Added" },
+    { message = "^[s|S]upport", group = ":rocket: Added" },
+    { message = "^[r|R]emove", group = ":wastebasket: Removed" },
+    { message = "^[d|D]elete", group = ":wastebasket: Removed" },
+    { message = "^feat", group = ":rocket: Added" },
+    { message = "^fix", group = ":bug: Fixed" },
+    { message = "^.*: add", group = ":rocket: Added" },
+    { message = "^.*: fix", group = ":bug: Fixed" },
+    { message = "^.*: support", group = ":rocket: Added" },
+    { message = "^.*: remove", group = ":wastebasket: Removed" },
+    { message = "^.*: delete", group = ":wastebasket: Removed" },
+    { message = "^.*", group = ":gear: Changed" },
 ]
 # filter out the commits that are not matched by commit parsers
 filter_commits = false
