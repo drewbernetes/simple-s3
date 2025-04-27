@@ -1,0 +1,91 @@
+name: Update the Changelog
+
+on:
+  pull_request:
+    types:
+      - closed
+
+jobs:
+  changelog:
+    name: Generate changelog
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - name: Generate a token
+        id: generate-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ vars.ACTIONS_BOT_APP_ID }}
+          private-key: ${{ secrets.ACTIONS_BOT_APP_PK }}
+
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          fetch-depth: 0
+
+      - name: Generate changelog
+        uses: orhun/git-cliff-action@4a4a951bc43fafe41cd2348d181853f52356bee7
+        with:
+          config: cliff.toml
+          args: "--verbose --bump"
+        env:
+          OUTPUT: CHANGELOG.md
+          GITHUB_REPO: ${{ github.repository }}
+          GITHUB_TOKEN: ${{ steps.generate-token.outputs.token }}
+
+      - name: Create or Update Changelog File
+        id: create-changelog
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea
+        with:
+          github-token: ${{ steps.generate-token.outputs.token }}
+          script: |
+
+            // Get the current contents of CHANGELOG.md
+            let currentContent = '';
+            let contents;
+            try {
+              contents = await github.rest.repos.getContent({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                path: 'CHANGELOG.md',
+              });
+              currentContent = Buffer.from(contents.data.content, 'base64').toString('utf-8');
+            } catch (error) {
+              if (error.status === 404) {
+                console.log('CHANGELOG.md does not exist, will create it.');
+              } else {
+                console.error('Error fetching CHANGELOG.md:', error);
+                core.setFailed(error.message);
+                return;
+              }
+            }
+
+            // Get the new changelog content
+            const newChangelogContent = require('fs').readFileSync('CHANGELOG.md', 'utf-8');
+
+            // If the content has changed, update the file
+            if (currentContent !== newChangelogContent) {
+              console.log("Updating CHANGELOG.md");
+
+              const createUpdateContents = await github.rest.repos.createOrUpdateFileContents({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                path: 'CHANGELOG.md',
+                message: 'Automated changelog update',
+                content: Buffer.from(newChangelogContent).toString('base64'),
+                committer: {
+                    name: 'drewbernetes-actions[bot]',
+                    email: '1232559+drewbernetes-actions[bot]@users.noreply.github.com'
+                },
+                author: {
+                  name: 'drewbernetes-actions[bot]',
+                  email: '1232559+drewbernetes-actions[bot]@users.noreply.github.com'
+                },
+                sha: currentContent? contents.data.sha: undefined, // Include SHA if updating
+              });
+              core.setOutput('commit_sha', createUpdateContents.data.commit.sha);
+            } else {
+              console.log('No changes to CHANGELOG.md.');
+            }
