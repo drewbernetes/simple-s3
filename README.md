@@ -1,19 +1,13 @@
 # Simple S3
 
-This repo is an abstraction of the AWS SDK to enable easy interaction with S3.
+A simple Go package for interacting with S3-compatible object storage.
 
-The point was to remove the fluff that is required to configure a client just so you can push, pull or list anything in
-S3.
+## Usage
 
-Now you just provide the access and secret keys, a region, a bucket, and an optional endpoint, if you are using your 
-own S3 storage, and you're off to the races.
+This package provides a simplified interface for interacting with AWS S3 or S3-compatible storage services.
 
-It's pretty basic at the moment as it does not support versioning etc, but it's a start!
-
-I may go further with it, I may not - it purely depends on my requirements and time available.
-
-
-## Update the Changelog
+## Development
+### Update the Changelog
 
 Get yourself a GitHub access token with permissions to read the repository, if you don't already have one.
 
@@ -31,8 +25,31 @@ git cliff -o
 It's worth noting that `--bump` will update the changelog with what it thinks will be the next release. Make sure to check this and ensure your next tag matches this value.
 See [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/)) for information on commit message style.
 
-Once tested and validated using your branch, get the next available tag by running the following command, and incrementing by one. e.g if this output `v0.1.31`, you should use v0.1.32.
-
 ```shell
 git tag | sort -V | tail -n1
 ```
+
+### Running Tests
+
+```bash
+go test -v -cover ./...
+```
+
+## License
+
+Copyright 2023 Drew Hudson-Viles.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+Once tested and validated using your branch, get the next available tag by running the following command, and incrementing by one. e.g if this output `v0.1.31`, you should use v0.1.32.
+
+
