@@ -32,9 +32,13 @@ import (
 	"os"
 )
 
-// S3 contains an S3 Client and a Bucket.
+// For testing purposes, allowing this function to be replaced in tests
+var newS3ClientFromConfig = func(cfg aws.Config, optFns ...func(*s3.Options)) *s3.Client {
+	return s3.NewFromConfig(cfg, optFns...)
+}
+
+// S3 contains an AWS S3 Client.
 type S3 struct {
-	Bucket string
 	Client *s3.Client
 }
 
@@ -56,7 +60,7 @@ func (r *staticResolver) ResolveEndpoint(_ context.Context, params s3.EndpointPa
 }
 
 // New generates a new EndpointWithResolverOptions and returns an S3 containing the Bucket and S3Client.
-func New(endpoint, accessKey, secretKey, bucket, region string) (*S3, error) {
+func New(ctx context.Context, endpoint, accessKey, secretKey, region string) (*S3, error) {
 	const defaultRegion = "us-east-1"
 	r := defaultRegion
 	if region != defaultRegion && region != "" {
@@ -67,8 +71,6 @@ func New(endpoint, accessKey, secretKey, bucket, region string) (*S3, error) {
 		return nil, err
 	}
 
-	ctx := context.Background()
-
 	cfg, err := config.LoadDefaultConfig(ctx,
 		config.WithRegion(r),
 		config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(accessKey, secretKey, "")),
@@ -77,72 +79,90 @@ func New(endpoint, accessKey, secretKey, bucket, region string) (*S3, error) {
 		return nil, err
 	}
 	return &S3{
-		Bucket: bucket,
-		Client: s3.NewFromConfig(cfg, func(o *s3.Options) {
+		Client: newS3ClientFromConfig(cfg, func(o *s3.Options) {
 			o.EndpointResolverV2 = &staticResolver{URL: ep}
 		}),
 	}, nil
 }
 
-// CreateBucket uses the client to create an S3 Bucket
-func (s *S3) CreateBucket() error {
-	ctx := context.Background()
+// CreateBucket uses the client to create an S3 Bucket.
+func (s *S3) CreateBucket(ctx context.Context, name string) error {
 	_, err := s.Client.CreateBucket(ctx, &s3.CreateBucketInput{
-		Bucket: aws.String(s.Bucket),
+		Bucket: aws.String(name),
 	})
 	return err
 }
 
+// ListBuckets uses the client to list all of the S3 Buckets with a specific prefix.
+func (s *S3) ListBuckets(ctx context.Context, prefix string) (*s3.ListBucketsOutput, error) {
+	buckets, err := s.Client.ListBuckets(ctx, &s3.ListBucketsInput{
+		Prefix: aws.String(prefix),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return buckets, nil
+}
+
 // DeleteBucket removes all objects from a bucket and then deletes the bucket itself
-func (s *S3) DeleteBucket() error {
+func (s *S3) DeleteBucket(ctx context.Context, name string) error {
+	// Check the bucket exists first.
+	buckets, err := s.ListBuckets(ctx, name)
+	if err != nil {
+		return err
+	}
+	if len(buckets.Buckets) == 0 {
+		return nil
+	}
+
 	// List all objects in the bucket
-	objects, err := s.List("")
+	objects, err := s.ListObject(ctx, name, "")
 	if err != nil {
 		return err
 	}
 
 	// Delete all objects
 	for _, key := range objects {
-		if err := s.Delete(key); err != nil {
+		if err := s.DeleteObject(ctx, name, key); err != nil {
 			return err
 		}
 	}
 
 	// Delete the bucket
 	input := &s3.DeleteBucketInput{
-		Bucket: aws.String(s.Bucket),
+		Bucket: aws.String(name),
 	}
 
-	_, err = s.Client.DeleteBucket(context.Background(), input)
+	_, err = s.Client.DeleteBucket(ctx, input)
 	return err
 }
 
-// Fetch Downloads a file from an S3 bucket and returns its contents as a byte array.
-func (s *S3) Fetch(fileName string) ([]byte, error) {
+// FetchObject Downloads a file from an S3 bucket and returns its contents as a byte array.
+func (s *S3) FetchObject(ctx context.Context, fileName, bucket string) ([]byte, error) {
 	params := &s3.GetObjectInput{
-		Bucket: &s.Bucket,
-		Key:    &fileName,
+		Bucket: aws.String(bucket),
+		Key:    aws.String(fileName),
 	}
 
-	obj, err := s.Client.GetObject(context.Background(), params)
+	obj, err := s.Client.GetObject(ctx, params)
 	if err != nil {
 		return nil, err
 	}
+	defer obj.Body.Close()
 
 	return io.ReadAll(obj.Body)
 }
 
-// Put Pushes a file to an S3 bucket. If the object is greater than 100MB it will be split into a multipart upload.
-func (s *S3) Put(key string, body *os.File) error {
-	ctx := context.Background()
-
+// PutObject Pushes a file to an S3 bucket. If the object is greater than 100MB it will be split into a multipart upload.
+func (s *S3) PutObject(ctx context.Context, bucket, key string, body *os.File) error {
 	fi, err := readFile(body)
 	if err != nil {
 		return err
 	}
 
 	params := &s3.PutObjectInput{
-		Bucket:      aws.String(s.Bucket),
+		Bucket:      aws.String(bucket),
 		Key:         aws.String(key),
 		ContentType: aws.String(fi.contentType),
 		Body:        bytes.NewReader(fi.buffer),
@@ -159,10 +179,10 @@ func (s *S3) Put(key string, body *os.File) error {
 		_, err = uploader.Upload(ctx, params)
 		if err != nil {
 			log.Printf("Couldn't upload large object to %v:%v. Here's why: %v\n",
-				s.Bucket, key, err)
+				bucket, key, err)
 		}
 	} else {
-		_, err = s.Client.PutObject(context.Background(), params)
+		_, err = s.Client.PutObject(ctx, params)
 		if err != nil {
 			return err
 		}
@@ -191,14 +211,13 @@ func readFile(body *os.File) (*fileInfo, error) {
 	return fi, nil
 }
 
-// List will list the contents of a bucket.
-func (s *S3) List(prefix string) ([]string, error) {
-
+// ListObject will list the contents of a bucket.
+func (s *S3) ListObject(ctx context.Context, bucket, prefix string) ([]string, error) {
 	params := &s3.ListObjectsInput{
-		Bucket: &s.Bucket,
-		Prefix: &prefix,
+		Bucket: aws.String(bucket),
+		Prefix: aws.String(prefix),
 	}
-	obj, err := s.Client.ListObjects(context.Background(), params)
+	obj, err := s.Client.ListObjects(ctx, params)
 	if err != nil {
 		return nil, err
 	}
@@ -211,13 +230,13 @@ func (s *S3) List(prefix string) ([]string, error) {
 	return contents, nil
 }
 
-// Delete removes a single object from an S3 bucket
-func (s *S3) Delete(key string) error {
+// DeleteObject removes a single object from an S3 bucket
+func (s *S3) DeleteObject(ctx context.Context, bucket, key string) error {
 	input := &s3.DeleteObjectInput{
-		Bucket: aws.String(s.Bucket),
+		Bucket: aws.String(bucket),
 		Key:    aws.String(key),
 	}
 
-	_, err := s.Client.DeleteObject(context.Background(), input)
+	_, err := s.Client.DeleteObject(ctx, input)
 	return err
 }

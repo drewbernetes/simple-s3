@@ -17,13 +17,18 @@ limitations under the License.
 package util
 
 import (
+	"context"
 	"io"
 )
 
 //go:generate mockgen -source=interfaces.go -destination=../mock/interfaces.go -package=mock
 
 type S3Interface interface {
-	List() ([]string, error)
-	Fetch(string) ([]byte, error)
-	Put(string, string, io.ReadSeeker) error
+	CreateBucket(context.Context, string)
+	ListBuckets(context.Context, string) (*[]string, error)
+	DeleteBucket(context.Context, string)
+	FetchObject(context.Context, string, string) ([]byte, error)
+	PutObject(context.Context, string, string, io.ReadSeeker) error
+	ListObject(context.Context, string, string) ([]string, error)
+	DeleteObject(context.Context, string, string)
 }
