@@ -5,9 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2025-08-12
+
+### :bug: Fixed
+- Fix correcting the reference to the bot ID in the changelog pipeline by @drew-viles in [#53](https://github.com/drewbernetes/simple-s3/pull/53)
+
+### :rocket: Added
+- Adding ability for user to override the default chunk sizing for multipart uploads & updating go modules by @drew-viles in [#52](https://github.com/drewbernetes/simple-s3/pull/52)
+
+
 ## [1.0.0] - 2025-08-01
 
 ### :gear: Changed
+- Bump github.com/aws/aws-sdk-go-v2/feature/s3/manager by @dependabot[bot] in [#41](https://github.com/drewbernetes/simple-s3/pull/41)
 - Updating modules by @drew-viles in [#36](https://github.com/drewbernetes/simple-s3/pull/36)
 - Bump github.com/aws/aws-sdk-go-v2/feature/s3/manager by @dependabot[bot] in [#31](https://github.com/drewbernetes/simple-s3/pull/31)
 - Bump github.com/aws/aws-sdk-go-v2/service/s3 by @dependabot[bot] in [#32](https://github.com/drewbernetes/simple-s3/pull/32)
@@ -16,7 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Bump github.com/aws/aws-sdk-go-v2/credentials by @dependabot[bot] in [#28](https://github.com/drewbernetes/simple-s3/pull/28)
 
 ### :rocket: Added
-- Updating the way buckets are handled, no longer part of the main struct, and updating tests
+- Updating to support bucket interactions and huge refactor to support bypassing aws checksum validation when not using aws s3 by @drew-viles in [#42](https://github.com/drewbernetes/simple-s3/pull/42)
 
 
 ## [0.1.7] - 2025-05-30
@@ -90,6 +100,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## New Contributors
 * @drew-viles made their first contribution in [#1](https://github.com/drewbernetes/simple-s3/pull/1)
+[1.1.0]: https://github.com/drewbernetes/simple-s3/compare/v1.0.0..v1.1.0
 [1.0.0]: https://github.com/drewbernetes/simple-s3/compare/v0.1.7..v1.0.0
 [0.1.7]: https://github.com/drewbernetes/simple-s3/compare/v0.1.6..v0.1.7
 [0.1.6]: https://github.com/drewbernetes/simple-s3/compare/v0.1.5..v0.1.6
