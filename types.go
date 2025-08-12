@@ -9,6 +9,7 @@ import (
 type S3Client struct {
     Client         *s3.Client
     customEndpoint bool
+    ChunkSize      int64
 }
 
 type PutUploadResult struct {
