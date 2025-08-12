@@ -95,12 +95,15 @@ func (s *S3Client) PutObject(ctx context.Context, bucket, key string, body *os.F
         Body:        bytes.NewReader(fi.buffer),
     }
 
-    var partMiBs int64 = 100
-    maxPartSize := partMiBs * 1024 * 1024
+    if s.ChunkSize == 0 {
+        var partMiBs int64 = 100
+        s.ChunkSize = partMiBs * 1024 * 1024
+    }
+
     // If the file is greater than 100MB, then we'll do a multipart upload
-    if fi.size > maxPartSize {
+    if fi.size > s.ChunkSize {
         uploader := manager.NewUploader(s.Client, func(u *manager.Uploader) {
-            u.PartSize = maxPartSize
+            u.PartSize = s.ChunkSize
         })
         uploadRes, err = uploader.Upload(ctx, params)
         if err != nil {
