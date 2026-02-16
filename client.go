@@ -219,7 +219,7 @@ func (s *S3) FetchObject(ctx context.Context, fileName, bucket string) ([]byte, 
 		return nil, err
 	}
 
-	defer obj.Body.Close()
+	defer obj.Body.Close() //nolint:all
 
 	return io.ReadAll(obj.Body)
 }
