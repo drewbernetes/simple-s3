@@ -5,15 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-02-16
+
+### :rocket: Added
+- Rewrite of the code. by @drew-viles in [#82](https://github.com/drewbernetes/simple-s3/pull/82)
+
+
 ## [1.1.0] - 2025-08-12
 
 ### :bug: Fixed
 - Fix correcting the reference to the bot ID in the changelog pipeline by @drew-viles in [#53](https://github.com/drewbernetes/simple-s3/pull/53)
 
+### :gear: Changed
+
 ### :rocket: Added
 - Adding ability for user to override the default chunk sizing for multipart uploads & updating go modules by @drew-viles in [#52](https://github.com/drewbernetes/simple-s3/pull/52)
 
 
+## New Contributors
+* @ made their first contribution
 ## [1.0.0] - 2025-08-01
 
 ### :gear: Changed
@@ -100,6 +110,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## New Contributors
 * @drew-viles made their first contribution in [#1](https://github.com/drewbernetes/simple-s3/pull/1)
+[1.2.0]: https://github.com/drewbernetes/simple-s3/compare/v1.1.0..v1.2.0
 [1.1.0]: https://github.com/drewbernetes/simple-s3/compare/v1.0.0..v1.1.0
 [1.0.0]: https://github.com/drewbernetes/simple-s3/compare/v0.1.7..v1.0.0
 [0.1.7]: https://github.com/drewbernetes/simple-s3/compare/v0.1.6..v0.1.7
