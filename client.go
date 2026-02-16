@@ -218,6 +218,7 @@ func (s *S3) FetchObject(ctx context.Context, fileName, bucket string) ([]byte, 
 	if err != nil {
 		return nil, err
 	}
+
 	defer obj.Body.Close()
 
 	return io.ReadAll(obj.Body)
