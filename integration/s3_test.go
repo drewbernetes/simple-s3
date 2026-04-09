@@ -24,9 +24,9 @@ var _ = Describe("S3 Integration", Ordered, func() {
 	)
 
 	BeforeAll(func() {
-		endpoint = os.Getenv("LOCALSTACK_ENDPOINT")
+		endpoint = os.Getenv("S3_ENDPOINT")
 		if endpoint == "" {
-			endpoint = "http://localhost:4566"
+			endpoint = "http://localhost:9000"
 		}
 
 		if os.Getenv("S3_INTEGRATION_TEST") != "true" {
@@ -36,8 +36,17 @@ var _ = Describe("S3 Integration", Ordered, func() {
 		ctx = context.Background()
 		bucket = fmt.Sprintf("integration-test-%d", time.Now().UnixNano())
 
+		accessKey := os.Getenv("S3_ACCESS_KEY")
+		if accessKey == "" {
+			accessKey = "minioadmin"
+		}
+		secretKey := os.Getenv("S3_SECRET_KEY")
+		if secretKey == "" {
+			secretKey = "minioadmin"
+		}
+
 		var err error
-		client, err = simple_s3.New(ctx, endpoint, "test", "test", "us-east-1")
+		client, err = simple_s3.New(ctx, endpoint, accessKey, secretKey, "us-east-1")
 		Expect(err).NotTo(HaveOccurred())
 	})
 

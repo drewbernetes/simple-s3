@@ -50,7 +50,7 @@ test-race: ## Run unit tests with race detector
 	$(GINKGO) -v --race --skip-package=integration ./...
 
 .PHONY: test-integration
-test-integration: ## Run integration tests against LocalStack (requires LOCALSTACK_ENDPOINT or defaults to http://localhost:4566)
+test-integration: ## Run integration tests against MinIO (requires S3_ENDPOINT or defaults to http://localhost:9000)
 	S3_INTEGRATION_TEST=true $(GO) test -v -tags=integration ./integration/...
 
 # ---------------------------------------------------------------------------
