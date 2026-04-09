@@ -2,9 +2,106 @@
 
 A simple Go package for interacting with S3-compatible object storage.
 
+## Installation
+
+```bash
+go get github.com/drewbernetes/simple-s3
+```
+
 ## Usage
 
 This package provides a simplified interface for interacting with AWS S3 or S3-compatible storage services.
+
+### Creating a Client
+
+```go
+package main
+
+import (
+	"context"
+
+	simple_s3 "github.com/drewbernetes/simple-s3"
+)
+
+func main() {
+	ctx := context.Background()
+
+	// Connect to AWS S3
+	client, err := simple_s3.New(ctx, "", "YOUR_ACCESS_KEY", "YOUR_SECRET_KEY", "us-west-2")
+	if err != nil {
+		panic(err)
+	}
+
+	// Or connect to an S3-compatible service (MinIO, LocalStack, etc.)
+	client, err = simple_s3.New(ctx, "http://localhost:9000", "minioadmin", "minioadmin", "")
+	if err != nil {
+		panic(err)
+	}
+
+	_ = client
+}
+```
+
+### Bucket Operations
+
+```go
+// Create a bucket
+err := client.CreateBucket(ctx, "my-bucket")
+
+// List buckets (with optional prefix filter)
+buckets, err := client.ListBuckets(ctx, "prod-")
+
+// Delete a bucket (also removes all objects inside it)
+err = client.DeleteBucket(ctx, "my-bucket")
+```
+
+### Object Operations
+
+```go
+import (
+	"bytes"
+	"os"
+)
+
+// Upload from a byte slice
+data := []byte("hello world")
+err := client.PutObject(ctx, "my-bucket", "path/to/object.txt", bytes.NewReader(data))
+
+// Upload a file
+f, err := os.Open("photo.jpg")
+if err != nil {
+	panic(err)
+}
+defer f.Close()
+err = client.PutObject(ctx, "my-bucket", "images/photo.jpg", f)
+
+// Download an object
+content, err := client.FetchObject(ctx, "path/to/object.txt", "my-bucket")
+
+// List objects (with optional prefix filter)
+keys, err := client.ListObject(ctx, "my-bucket", "images/")
+
+// Delete an object
+err = client.DeleteObject(ctx, "my-bucket", "path/to/object.txt")
+```
+
+### Mocking for Tests
+
+An `S3Interface` is provided for dependency injection and testing:
+
+```go
+import "github.com/drewbernetes/simple-s3/pkg/util"
+
+type MyService struct {
+	storage util.S3Interface
+}
+```
+
+Mock generation (requires [mockgen](https://github.com/uber-go/mock)):
+
+```bash
+mockgen -source=pkg/util/interfaces.go -destination=pkg/mock/interfaces.go -package=mock
+```
 
 ## Development
 ### Update the Changelog
