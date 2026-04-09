@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.2.1] - 2026-04-09
 
 ### :gear: Changed
+- Module updates by @drew-viles in [#84](https://github.com/drewbernetes/simple-s3/pull/84)
 - Updating README with examples by @drew-viles in [#83](https://github.com/drewbernetes/simple-s3/pull/83)
 
 
