@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.2.2] - 2026-04-10
 
 ### :gear: Changed
-- Moving from docker run to services to prevent a requirement of a docker daemon being used.
+- Moving from docker run to services to prevent a requirement of a docker daemon being used. by @drew-viles in [#86](https://github.com/drewbernetes/simple-s3/pull/86)
 
 
 ## [1.2.1] - 2026-04-10
