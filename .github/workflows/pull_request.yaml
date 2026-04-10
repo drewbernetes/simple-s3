@@ -64,6 +64,7 @@ jobs:
     services:
       minio:
         image: quay.io/minio/minio:latest
+        command: server /data
         ports:
           - 9000:9000
         env:
