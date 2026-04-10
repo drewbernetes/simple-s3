@@ -82,6 +82,7 @@ sast: gosec govulncheck staticcheck ## Run all SAST tools
 
 .PHONY: generate
 generate: ## Regenerate mocks
+	$(GO) install go.uber.org/mock/mockgen@latest
 	$(GO) generate ./...
 
 .PHONY: generate-check
