@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.2.3] - 2026-04-21
 
 ### :gear: Changed
+- Bump github.com/aws/aws-sdk-go-v2/service/s3 by @dependabot[bot] in [#89](https://github.com/drewbernetes/simple-s3/pull/89)
 - Bump github.com/aws/aws-sdk-go-v2/config by @dependabot[bot] in [#91](https://github.com/drewbernetes/simple-s3/pull/91)
 
 
